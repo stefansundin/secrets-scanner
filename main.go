@@ -7,9 +7,12 @@ import (
   "io/ioutil"
   "bufio"
   "fmt"
+  "strings"
   "regexp"
+  "time"
   "net/http"
   "github.com/andrew-d/go-termutil"
+  "github.com/garyburd/redigo/redis"
 )
 
 type Pattern struct {
@@ -27,7 +30,7 @@ func append_unique(slice []string, add string) []string {
   return append(slice, add)
 }
 
-func get_url(url string) []byte {
+func http_get(url string) []byte {
   resp, err := http.Get(url)
   if err != nil {
     panic(err)
@@ -53,6 +56,21 @@ func main() {
     {
       "google_access_token",
       regexp.MustCompile("ya29.[0-9a-zA-Z_\\-]{68}"),
+      make([]string, 0),
+    },
+    { // xoxp are Slack API keys
+      "slack_xoxp",
+      regexp.MustCompile("xoxp-\\d+-\\d+-\\d+-[0-9a-f]+"),
+      make([]string, 0),
+    },
+    { // xoxb are Slack bot credentials
+      "slack_xoxb",
+      regexp.MustCompile("xoxb-\\d+-[0-9a-zA-Z]+"),
+      make([]string, 0),
+    },
+    {
+      "redis_url",
+      regexp.MustCompile("redis://[0-9a-zA-Z:@.\\-]+"),
       make([]string, 0),
     },
   }
@@ -81,7 +99,34 @@ func main() {
         fmt.Printf("- %s\n", m)
         if *test_flag {
           url := "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token="+m
-          fmt.Printf("%s\n%s\n", url, get_url(url))
+          fmt.Printf("%s\n%s\n", url, http_get(url))
+        }
+      }
+    } else if strings.HasPrefix(v.provider, "slack_") {
+      fmt.Println("Found Slack keys:")
+      for _, m := range v.matches {
+        fmt.Printf("- %s\n", m)
+        if *test_flag {
+          url := "https://slack.com/api/auth.test?token="+m
+          data := http_get(url)
+          fmt.Printf("%s\n%s\n", url, data)
+          if data[len(data)-1] != '\n' {
+            fmt.Println()
+          }
+        }
+      }
+    } else if v.provider == "redis_url" {
+      fmt.Println("Found Redis URLs:")
+      for _, m := range v.matches {
+        fmt.Printf("- '%s'\n", m)
+        if *test_flag {
+          c, err := redis.DialURL(m, redis.DialConnectTimeout(time.Second))
+          if err == nil {
+            fmt.Println("Connection successful!\n")
+            defer c.Close()
+          } else {
+            fmt.Printf("Connection failed: %s\n\n", err)
+          }
         }
       }
     } else {
