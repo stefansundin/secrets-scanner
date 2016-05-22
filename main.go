@@ -54,8 +54,18 @@ func main() {
 
   scanners := []Pattern {
     {
+      "aws_access_key_id",
+      regexp.MustCompile("AKIA[0-9A-Z]{16}"),
+      make([]string, 0),
+    },
+    {
       "google_access_token",
       regexp.MustCompile("ya29.[0-9a-zA-Z_\\-]{68}"),
+      make([]string, 0),
+    },
+    {
+      "google_api",
+      regexp.MustCompile("AIzaSy[0-9a-zA-Z_\\-]{33}"),
       make([]string, 0),
     },
     { // xoxp are Slack API keys
@@ -71,6 +81,16 @@ func main() {
     {
       "redis_url",
       regexp.MustCompile("redis://[0-9a-zA-Z:@.\\-]+"),
+      make([]string, 0),
+    },
+    {
+      "gemfury1",
+      regexp.MustCompile("https?://[0-9a-zA-Z]+@[a-z]+\\.(gemfury.com|fury.io)(/[a-z]+)?"),
+      make([]string, 0),
+    },
+    {
+      "gemfury2",
+      regexp.MustCompile("https?://[a-z]+\\.(gemfury.com|fury.io)/[0-9a-zA-Z]{20}"),
       make([]string, 0),
     },
   }
@@ -102,6 +122,16 @@ func main() {
           fmt.Printf("%s\n%s\n", url, http_get(url))
         }
       }
+    } else if v.provider == "google_api" {
+      fmt.Println("Found Google API keys:")
+      for _, m := range v.matches {
+        fmt.Printf("- %s\n", m)
+        if *test_flag {
+          // Just testing to get info about gangnam style, is there a better endpoint?
+          url := "https://www.googleapis.com/youtube/v3/videos?part=id&id=9bZkp7q19f0&key="+m
+          fmt.Printf("%s\n%s\n", url, http_get(url))
+        }
+      }
     } else if strings.HasPrefix(v.provider, "slack_") {
       fmt.Println("Found Slack keys:")
       for _, m := range v.matches {
@@ -130,7 +160,7 @@ func main() {
         }
       }
     } else {
-      fmt.Printf("%s -> %s\n", v.provider, v.matches)
+      fmt.Printf("%s -> %s\n\n", v.provider, v.matches)
     }
   }
 }
