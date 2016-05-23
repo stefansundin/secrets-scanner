@@ -122,6 +122,7 @@ func main() {
           fmt.Printf("%s\n%s\n", url, http_get(url))
         }
       }
+      fmt.Println()
     } else if v.provider == "google_api" {
       fmt.Println("Found Google API keys:")
       for _, m := range v.matches {
@@ -132,6 +133,7 @@ func main() {
           fmt.Printf("%s\n%s\n", url, http_get(url))
         }
       }
+      fmt.Println()
     } else if strings.HasPrefix(v.provider, "slack_") {
       fmt.Println("Found Slack keys:")
       for _, m := range v.matches {
@@ -145,10 +147,11 @@ func main() {
           }
         }
       }
+      fmt.Println()
     } else if v.provider == "redis_url" {
       fmt.Println("Found Redis URLs:")
       for _, m := range v.matches {
-        fmt.Printf("- '%s'\n", m)
+        fmt.Printf("- %s\n", m)
         if *test_flag {
           c, err := redis.DialURL(m, redis.DialConnectTimeout(time.Second))
           if err == nil {
@@ -159,6 +162,7 @@ func main() {
           }
         }
       }
+      fmt.Println()
     } else {
       fmt.Printf("%s -> %s\n\n", v.provider, v.matches)
     }
