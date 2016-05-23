@@ -47,7 +47,7 @@ func main() {
   flag.Parse()
 
   if termutil.Isatty(os.Stdin.Fd()) {
-    fmt.Println("Usage: git log -p | ./secrets-scanner")
+    fmt.Printf("Usage: git log -p | %s\n", os.Args[0])
     fmt.Println("Use -test to test found API keys.")
     return
   }
