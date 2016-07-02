@@ -16,9 +16,11 @@ import (
 )
 
 type pattern struct {
-	provider string
-	re       *regexp.Regexp
-	matches  []string
+	provider   string
+	re         *regexp.Regexp
+	matches    []string
+	inputChan  chan string
+	outputChan chan string
 }
 
 func appendUnique(slice []string, add string) []string {
@@ -53,60 +55,125 @@ func main() {
 		return
 	}
 
+	inputChannelSize := 100
+	outputChannelSize := 3
 	scanners := []pattern{
 		{
 			"aws_access_key_id",
 			regexp.MustCompile("AKIA[0-9A-Z]{16}"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{
 			"google_access_token",
 			regexp.MustCompile("ya29.[0-9a-zA-Z_\\-]{68}"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{
 			"google_api",
 			regexp.MustCompile("AIzaSy[0-9a-zA-Z_\\-]{33}"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{ // xoxp are Slack API keys
 			"slack_xoxp",
 			regexp.MustCompile("xoxp-\\d+-\\d+-\\d+-[0-9a-f]+"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{ // xoxb are Slack bot credentials
 			"slack_xoxb",
 			regexp.MustCompile("xoxb-\\d+-[0-9a-zA-Z]+"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{
 			"redis_url",
 			regexp.MustCompile("redis://[0-9a-zA-Z:@.\\-]+"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{
 			"gemfury1",
 			regexp.MustCompile("https?://[0-9a-zA-Z]+@[a-z]+\\.(gemfury.com|fury.io)(/[a-z]+)?"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 		{
 			"gemfury2",
 			regexp.MustCompile("https?://[a-z]+\\.(gemfury.com|fury.io)/[0-9a-zA-Z]{20}"),
 			make([]string, 0),
+			make(chan string, inputChannelSize),
+			make(chan string, outputChannelSize),
 		},
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		for i := range scanners {
-			matches := scanners[i].re.FindAllString(line, -1)
-			for _, match := range matches {
-				scanners[i].matches = appendUnique(scanners[i].matches, match)
+	// start all the go routines
+	for _, s := range scanners {
+		go func(scanner pattern) {
+			for {
+				line, more := <-scanner.inputChan
+				if more {
+					// fmt.Println("received job", line)
+					matches := scanner.re.FindAllString(line, -1)
+					for _, match := range matches {
+						scanner.outputChan <- match
+					}
+				} else {
+					// fmt.Println("received all jobs")
+					close(scanner.outputChan)
+					break
+				}
 			}
+		}(s)
+	}
+
+	// feed the go routines with a go routine
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				// fmt.Println("EOF")
+				for _, scanner := range scanners {
+					close(scanner.inputChan)
+				}
+				break
+			}
+			for _, scanner := range scanners {
+				scanner.inputChan <- line
+			}
+		}
+	}()
+
+	// read the output from the go routines
+	for {
+		done := true
+		for i := range scanners {
+			select {
+			case match, more := <-scanners[i].outputChan:
+				if match != "" {
+					// fmt.Println("received output", match, more)
+					scanners[i].matches = appendUnique(scanners[i].matches, match)
+				}
+				if more {
+					done = false
+				}
+			default:
+				// fmt.Println("no message received")
+				done = false
+			}
+		}
+		if done {
+			break
 		}
 	}
 
