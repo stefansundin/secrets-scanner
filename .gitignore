@@ -1,2 +1,8 @@
+Thumbs.db
+*.DS_Store
+*.swp
+*.ucf-dist
+.~lock.*
+
 secrets-scanner
 secrets-scanner.exe

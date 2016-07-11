@@ -26,3 +26,10 @@ Connection failed: dial tcp 93.184.216.34:11141: i/o timeout
 - Slack `xoxp` and `xoxb` tokens
 - Redis URLs
 - Gemfury URLs
+
+# Dependencies
+
+Dependencies are vendored with git submodule, clone with `--recursive`:
+```
+git clone --recursive https://github.com/stefansundin/secrets-scanner
+```
