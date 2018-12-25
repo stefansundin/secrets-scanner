@@ -1,6 +1,0 @@
-[submodule "vendor/github.com/garyburd/redigo"]
-	path = vendor/github.com/garyburd/redigo
-	url = https://github.com/garyburd/redigo
-[submodule "vendor/github.com/andrew-d/go-termutil"]
-	path = vendor/github.com/andrew-d/go-termutil
-	url = https://github.com/andrew-d/go-termutil

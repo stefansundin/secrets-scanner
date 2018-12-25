@@ -4,8 +4,8 @@ Find API tokens and other secrets in your code.
 
 Example: Search Git history including commit messages:
 ```
-$ go get -u github.com/stefansundin/secrets-scanner
-$ cd $GOPATH/src/github.com/stefansundin/secrets-scanner
+$ git clone https://github.com/stefansundin/secrets-scanner
+$ cd secrets-scanner
 $ go build
 $ git log -p | ./secrets-scanner
 Found Redis URLs:
