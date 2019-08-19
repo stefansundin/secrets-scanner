@@ -4,7 +4,7 @@ Find API tokens and other secrets in your code.
 
 Example: Search Git history including commit messages:
 ```
-$ git clone https://github.com/stefansundin/secrets-scanner
+$ git clone https://github.com/stefansundin/secrets-scanner.git
 $ cd secrets-scanner
 $ go build
 $ git log -p | ./secrets-scanner
